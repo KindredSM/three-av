@@ -13,6 +13,7 @@ export default function Home() {
   const [duration, setDuration] = useState(0)
   const [volume, setVolume] = useState(1)
   const [fileName, setFileName] = useState<string>('')
+  const [showControls, setShowControls] = useState(false)
   
   const audioContextRef = useRef<AudioContext | null>(null)
   const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null)
@@ -36,7 +37,6 @@ export default function Home() {
       gainNodeRef.current = audioContextRef.current.createGain()
     }
 
-    // Ensure analyzer is always connected to gain node
     analyserRef.current.disconnect()
     gainNodeRef.current.disconnect()
     
@@ -69,35 +69,27 @@ export default function Home() {
   const playAudio = (startAt = 0) => {
     if (!audioContextRef.current || !audioBufferRef.current) return
 
-    // Setup audio nodes if they don't exist
     setupAudioNodes()
 
-    // Stop any currently playing audio
     sourceNodeRef.current?.stop()
     sourceNodeRef.current?.disconnect()
 
-    // Create new source node
     const sourceNode = audioContextRef.current.createBufferSource()
     sourceNode.buffer = audioBufferRef.current
     sourceNodeRef.current = sourceNode
 
-    // Set volume
     if (gainNodeRef.current) {
       gainNodeRef.current.gain.value = volume
     }
 
-    // Connect source -> analyzer -> gain -> destination
     sourceNode.connect(analyserRef.current!)
 
-    // Start playback
     sourceNode.start(0, startAt)
     startTimeRef.current = audioContextRef.current.currentTime - startAt
     setIsPlaying(true)
 
-    // Start visualization
     startVisualization()
 
-    // Update time
     const updateTime = () => {
       if (!audioContextRef.current) return
       const elapsed = audioContextRef.current.currentTime - startTimeRef.current
@@ -180,14 +172,20 @@ export default function Home() {
     setIsDragging(false)
   }
 
+  const handleMouseMove = (e: React.MouseEvent) => {
+    const threshold = window.innerHeight - 150
+    setShowControls(e.clientY > threshold)
+  }
+
   return (
     <div 
-      className="h-screen w-full relative bg-zinc-800 font-sans overflow-hidden"
+      className="h-screen w-full relative bg-zinc-950 font-sans overflow-hidden"
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={() => setShowControls(false)}
     >
-      {/* Drop zone */}
       <div 
         className={`absolute inset-0 z-10 transition-all duration-300 m-8
           border-2 border-dashed rounded-2xl
@@ -203,8 +201,11 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Audio Controls - Full width at bottom */}
-      <div className="absolute bottom-0 left-0 right-0 z-30">
+      <div 
+        className={`absolute bottom-0 left-0 right-0 z-30 transition-transform duration-300 ease-in-out ${
+          showControls ? 'translate-y-0' : 'translate-y-full'
+        }`}
+      >
         <div className="bg-zinc-900/80 backdrop-blur-2xl border-t border-zinc-800/50 p-6">
           <div className="max-w-3xl mx-auto space-y-4">
             {fileName && (
@@ -214,7 +215,6 @@ export default function Home() {
             )}
             
             <div className="flex items-center gap-6">
-              {/* Play/Pause Button */}
               <button
                 onClick={togglePlayPause}
                 className="w-10 h-10 rounded-full bg-zinc-800 hover:bg-zinc-700 
@@ -227,7 +227,6 @@ export default function Home() {
                 }
               </button>
 
-              {/* Time Slider */}
               <div className="flex-1 space-y-2">
                 <input
                   type="range"
@@ -252,7 +251,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Volume Control */}
               <div className="flex items-center gap-2 w-24 group">
                 <Volume2 className="w-4 h-4 text-zinc-400 group-hover:text-zinc-300 transition-colors" />
                 <input
