@@ -1,0 +1,10 @@
+{
+  "files.associations": {
+    "*.css": "postcss"
+  },
+  "css.validate": false,
+  "tailwindCSS.experimental.classRegex": [
+    ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
+    ["cn\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"]
+  ]
+} 
